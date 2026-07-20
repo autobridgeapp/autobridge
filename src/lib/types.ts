@@ -6,7 +6,7 @@ export type Category =
   | "wing"
   | "turbo";
 
-export type Seller = {
+export type Profile = {
   id: string;
   handle: string;
   name: string;
@@ -14,6 +14,8 @@ export type Seller = {
   sales: number;
   blurb: string;
   location: string;
+  userId: string | null;
+  usernameSet: boolean;
 };
 
 export type Listing = {
@@ -28,5 +30,5 @@ export type Listing = {
   fitsMyCar: boolean;
   description: string;
   specs: [string, string][];
-  seller: Seller;
+  seller: Profile;
 };

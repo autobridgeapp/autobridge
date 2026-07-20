@@ -3,16 +3,26 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const TABS: { href: string; label: string }[] = [
-  { href: "/", label: "Browse" },
-  { href: "/sell", label: "Sell" },
-  { href: "/inbox", label: "Inbox" },
-  { href: "/profile", label: "Profile" },
-];
+const AUTH_ROUTES = ["/login", "/signup", "/onboarding"];
 
-export default function AppShell({ children }: { children: React.ReactNode }) {
+export default function AppShell({
+  children,
+  isAuthed,
+}: {
+  children: React.ReactNode;
+  isAuthed: boolean;
+}) {
   const pathname = usePathname();
   const isListing = pathname?.startsWith("/listing/");
+  const isAuthRoute = AUTH_ROUTES.includes(pathname ?? "");
+  const hideNav = isListing || isAuthRoute;
+
+  const tabs = [
+    { href: "/", label: "Browse" },
+    { href: "/sell", label: "Sell" },
+    { href: "/inbox", label: "Inbox" },
+    { href: isAuthed ? "/profile" : "/login", label: "Profile" },
+  ];
 
   return (
     <div className="w-full max-w-[400px] bg-bg rounded-[22px] overflow-hidden relative flex flex-col min-h-[720px] shadow-[0_12px_40px_rgba(16,17,18,0.18)]">
@@ -22,13 +32,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </Link>
       </div>
       <div className="flex-1 overflow-y-auto relative">{children}</div>
-      {!isListing && (
+      {!hideNav && (
         <div className="flex border-t border-line bg-white">
-          {TABS.map((t) => {
-            const active = pathname === t.href;
+          {tabs.map((t) => {
+            const active =
+              pathname === t.href || (t.label === "Profile" && pathname?.startsWith("/profile"));
             return (
               <Link
-                key={t.href}
+                key={t.label}
                 href={t.href}
                 className="flex-1 pt-[13px] pb-[15px] text-center font-extrabold text-[13px] -mt-px"
                 style={{

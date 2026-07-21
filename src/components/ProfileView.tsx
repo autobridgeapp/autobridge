@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Listing, Profile } from "@/lib/types";
-import { MY_CAR } from "@/lib/constants";
+import { Listing, Profile, Vehicle } from "@/lib/types";
+import { formatVehicleLabel } from "@/lib/fitment";
 import { createClient } from "@/lib/supabase/client";
 import { LISTING_PHOTOS_BUCKET, storagePathFromUrl } from "@/lib/storage";
 import PartArt from "./PartArt";
@@ -23,9 +23,11 @@ type SubTab = (typeof SUBTABS)[number][0];
 export default function ProfileView({
   profile,
   listings,
+  primaryVehicle,
 }: {
   profile: Profile;
   listings: Listing[];
+  primaryVehicle: Vehicle | null;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -69,14 +71,25 @@ export default function ProfileView({
         <SignOutButton />
       </div>
 
-      <div className="mx-4 mt-3.5 bg-ink text-white rounded-xl px-3.5 py-3 flex justify-between items-center">
-        <div>
-          <div className="font-mono text-[9px] tracking-widest text-[#9a9a94]">
-            MY GARAGE
+      <div className="px-4 mt-3.5">
+        <button
+          onClick={() => router.push("/garage")}
+          className="w-full text-left bg-ink text-white rounded-xl px-3.5 py-3 flex justify-between items-center border-none cursor-pointer"
+        >
+          <div>
+            <div className="font-mono text-[9px] tracking-widest text-[#9a9a94]">
+              MY GARAGE
+            </div>
+            <div className="font-extrabold text-sm mt-0.5">
+              {primaryVehicle ? formatVehicleLabel(primaryVehicle) : "Add a vehicle"}
+            </div>
           </div>
-          <div className="font-extrabold text-sm mt-0.5">{MY_CAR.label}</div>
-        </div>
-        <span className="font-mono text-[10px] text-fit">FITMENT ACTIVE ●</span>
+          {primaryVehicle ? (
+            <span className="font-mono text-[10px] text-fit">FITMENT ACTIVE ●</span>
+          ) : (
+            <span className="font-mono text-[10px] text-[#9a9a94]">MANAGE ›</span>
+          )}
+        </button>
       </div>
 
       <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pt-3.5 pb-3">

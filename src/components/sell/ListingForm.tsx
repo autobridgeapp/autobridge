@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/compressImage";
 import { LISTING_PHOTOS_BUCKET, storagePathFromUrl } from "@/lib/storage";
 import { Category, Listing } from "@/lib/types";
+import FitmentRow, { FitmentRowState } from "./FitmentRow";
 
 const CAT_OPTIONS: { id: Category; label: string }[] = [
   { id: "wheel", label: "Wheels" },
@@ -30,6 +31,25 @@ function parseCond(cond: string): { label: string; rating: string } {
   return { label: label ?? "Used", rating };
 }
 
+const DEFAULT_FITMENT_ROW: FitmentRowState = {
+  universal: true,
+  yearStart: "",
+  yearEnd: "",
+  make: "",
+  model: "",
+};
+
+function initialFitmentRows(listing?: Listing): FitmentRowState[] {
+  if (!listing || listing.fitment.length === 0) return [DEFAULT_FITMENT_ROW];
+  return listing.fitment.map((f) => ({
+    universal: f.universal,
+    yearStart: f.yearStart !== null ? String(f.yearStart) : "",
+    yearEnd: f.yearEnd !== null ? String(f.yearEnd) : "",
+    make: f.make ?? "",
+    model: f.model ?? "",
+  }));
+}
+
 export default function ListingForm({
   sellerId,
   listing,
@@ -50,6 +70,7 @@ export default function ListingForm({
   const [pn, setPn] = useState(listing?.pn ?? "");
   const [existingPhotos, setExistingPhotos] = useState<string[]>(listing?.photos ?? []);
   const [newFiles, setNewFiles] = useState<NewPhoto[]>([]);
+  const [fitmentRows, setFitmentRows] = useState<FitmentRowState[]>(() => initialFitmentRows(listing));
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -84,6 +105,53 @@ export default function ListingForm({
     });
   }
 
+  function updateFitmentRow(index: number, next: FitmentRowState) {
+    setFitmentRows((prev) => prev.map((r, i) => (i === index ? next : r)));
+  }
+
+  function addFitmentRow() {
+    setFitmentRows((prev) => [
+      ...prev,
+      { universal: false, yearStart: "", yearEnd: "", make: "", model: "" },
+    ]);
+  }
+
+  function removeFitmentRow(index: number) {
+    setFitmentRows((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function validateFitment(): string | null {
+    for (const r of fitmentRows) {
+      if (r.universal) continue;
+      if (!r.yearStart || !r.make || !r.model) {
+        return "Each specific fitment needs a year, make, and model (or check Universal).";
+      }
+    }
+    return null;
+  }
+
+  function buildFitmentPayload(listingId: number) {
+    return fitmentRows.map((r) =>
+      r.universal
+        ? {
+            listing_id: listingId,
+            universal: true,
+            make: null,
+            model: null,
+            year_start: null,
+            year_end: null,
+          }
+        : {
+            listing_id: listingId,
+            universal: false,
+            make: r.make,
+            model: r.model,
+            year_start: Number(r.yearStart),
+            year_end: r.yearEnd ? Number(r.yearEnd) : null,
+          }
+    );
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -95,6 +163,8 @@ export default function ListingForm({
     if (!pn.trim()) return setError("Part number is required.");
     if (!Number.isInteger(ratingNum) || ratingNum < 1 || ratingNum > 10)
       return setError("Condition rating must be 1-10.");
+    const fitmentError = validateFitment();
+    if (fitmentError) return setError(fitmentError);
 
     setLoading(true);
     try {
@@ -135,6 +205,17 @@ export default function ListingForm({
           .eq("id", listing.id);
         if (updateError) throw updateError;
 
+        const { error: deleteFitmentError } = await supabase
+          .from("listing_fitment")
+          .delete()
+          .eq("listing_id", listing.id);
+        if (deleteFitmentError) throw deleteFitmentError;
+
+        const { error: fitmentError } = await supabase
+          .from("listing_fitment")
+          .insert(buildFitmentPayload(listing.id));
+        if (fitmentError) throw fitmentError;
+
         router.push(`/listing/${listing.id}`);
         router.refresh();
       } else {
@@ -153,6 +234,11 @@ export default function ListingForm({
           .select("id")
           .single();
         if (insertError) throw insertError;
+
+        const { error: fitmentError } = await supabase
+          .from("listing_fitment")
+          .insert(buildFitmentPayload(inserted.id));
+        if (fitmentError) throw fitmentError;
 
         router.push(`/listing/${inserted.id}`);
         router.refresh();
@@ -251,6 +337,28 @@ export default function ListingForm({
             className={inputClass}
           />
         </div>
+      </div>
+
+      <div>
+        <label className="text-xs font-bold text-muted mb-1 block">Fitment</label>
+        <div className="flex flex-col gap-2">
+          {fitmentRows.map((row, i) => (
+            <FitmentRow
+              key={i}
+              value={row}
+              onChange={(next) => updateFitmentRow(i, next)}
+              onRemove={() => removeFitmentRow(i)}
+              canRemove={fitmentRows.length > 1}
+            />
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={addFitmentRow}
+          className="mt-2 border-none bg-transparent cursor-pointer text-xs font-bold text-ink"
+        >
+          + Add another fitment
+        </button>
       </div>
 
       <div>

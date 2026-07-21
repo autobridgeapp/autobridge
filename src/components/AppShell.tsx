@@ -15,7 +15,8 @@ export default function AppShell({
   const pathname = usePathname();
   const isListing = pathname?.startsWith("/listing/");
   const isAuthRoute = AUTH_ROUTES.includes(pathname ?? "");
-  const hideNav = isListing || isAuthRoute;
+  const isGarage = pathname === "/garage";
+  const hideNav = isListing || isAuthRoute || isGarage;
 
   const tabs = [
     { href: "/", label: "Browse" },

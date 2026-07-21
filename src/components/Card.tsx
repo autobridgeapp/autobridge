@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Listing } from "@/lib/types";
+import { Listing, Vehicle } from "@/lib/types";
+import { listingFitsVehicle, formatVehicleShort } from "@/lib/fitment";
 import PartArt from "./PartArt";
 import FitBadge from "./FitBadge";
 import Heart from "./Heart";
@@ -12,12 +13,16 @@ export default function Card({
   listing,
   liked,
   toggleLike,
+  primaryVehicle,
 }: {
   listing: Listing;
   liked: boolean;
   toggleLike: () => void;
+  primaryVehicle: Vehicle | null;
 }) {
   const router = useRouter();
+  const fits = primaryVehicle ? listingFitsVehicle(listing.fitment, primaryVehicle) : false;
+
   return (
     <div
       onClick={() => router.push(`/listing/${listing.id}`)}
@@ -40,9 +45,9 @@ export default function Card({
             <PartArt cat={listing.cat} />
           </div>
         )}
-        {listing.fitsMyCar && (
+        {fits && primaryVehicle && (
           <div className="absolute top-2 left-2">
-            <FitBadge compact />
+            <FitBadge compact vehicleLabel={formatVehicleShort(primaryVehicle)} />
           </div>
         )}
         <div className="absolute bottom-2 right-2">

@@ -18,6 +18,27 @@ export type Profile = {
   usernameSet: boolean;
 };
 
+export type FitmentEntry = {
+  id: number;
+  universal: boolean;
+  make: string | null;
+  model: string | null;
+  yearStart: number | null;
+  yearEnd: number | null;
+};
+
+export type Vehicle = {
+  year: number;
+  make: string;
+  model: string;
+};
+
+export type GarageVehicle = Vehicle & {
+  id: number;
+  trim: string | null;
+  isPrimary: boolean;
+};
+
 export type Listing = {
   id: number;
   cat: Category;
@@ -26,10 +47,9 @@ export type Listing = {
   price: number;
   cond: string;
   pn: string;
-  fits: string[];
-  fitsMyCar: boolean;
   description: string;
   specs: [string, string][];
   photos: string[];
+  fitment: FitmentEntry[];
   seller: Profile;
 };

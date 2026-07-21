@@ -1,6 +1,10 @@
-import { MY_CAR } from "@/lib/constants";
-
-export default function FitBadge({ compact }: { compact?: boolean }) {
+export default function FitBadge({
+  vehicleLabel,
+  compact,
+}: {
+  vehicleLabel: string;
+  compact?: boolean;
+}) {
   return (
     <span
       className="font-mono inline-block bg-fit text-white font-semibold rounded whitespace-nowrap tracking-wider"
@@ -9,7 +13,7 @@ export default function FitBadge({ compact }: { compact?: boolean }) {
         padding: compact ? "3px 6px" : "4px 8px",
       }}
     >
-      FITS YOUR {MY_CAR.short.toUpperCase()}
+      FITS YOUR {vehicleLabel.toUpperCase()}
     </span>
   );
 }

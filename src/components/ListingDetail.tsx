@@ -3,19 +3,27 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Image from "next/image";
-import { Listing } from "@/lib/types";
+import { Listing, Vehicle } from "@/lib/types";
+import { listingFitsVehicle, formatVehicleShort, formatFitmentEntry } from "@/lib/fitment";
 import PartArt from "./PartArt";
 import FitBadge from "./FitBadge";
 import Heart from "./Heart";
 import Price from "./Price";
 
-export default function ListingDetail({ listing }: { listing: Listing }) {
+export default function ListingDetail({
+  listing,
+  primaryVehicle,
+}: {
+  listing: Listing;
+  primaryVehicle: Vehicle | null;
+}) {
   const router = useRouter();
   const [liked, setLiked] = useState(false);
   const [offerSent, setOfferSent] = useState(false);
   const [activePhoto, setActivePhoto] = useState(0);
   const s = listing.seller;
   const photos = listing.photos;
+  const fits = primaryVehicle ? listingFitsVehicle(listing.fitment, primaryVehicle) : false;
 
   return (
     <div className="pb-[90px] relative">
@@ -64,7 +72,7 @@ export default function ListingDetail({ listing }: { listing: Listing }) {
         </div>
       )}
       <div className="px-4 pt-4">
-        {listing.fitsMyCar && <FitBadge />}
+        {fits && primaryVehicle && <FitBadge vehicleLabel={formatVehicleShort(primaryVehicle)} />}
         <h2 className="text-[19px] font-extrabold mt-2.5 mb-1 leading-tight">
           {listing.title}
         </h2>
@@ -76,7 +84,7 @@ export default function ListingDetail({ listing }: { listing: Listing }) {
           P/N {listing.pn}
         </div>
 
-        {listing.fits.length > 0 && (
+        {listing.fitment.length > 0 && (
           <div className="mt-4 bg-white rounded-xl ring-1 ring-cardline overflow-hidden">
             <div className="px-3.5 py-2.5 border-b border-cardline flex justify-between items-center">
               <span className="font-mono text-[10px] tracking-widest text-muted">
@@ -84,19 +92,22 @@ export default function ListingDetail({ listing }: { listing: Listing }) {
               </span>
               <span className="w-2 h-2 rounded-full bg-fit" />
             </div>
-            {listing.fits.map((f, i) => (
-              <div
-                key={i}
-                className="px-3.5 py-2.5 text-[13.5px]"
-                style={{
-                  borderBottom:
-                    i < listing.fits.length - 1 ? "1px solid #F3F3EF" : "none",
-                  fontWeight: f.includes("WRX") && listing.fitsMyCar ? 700 : 400,
-                }}
-              >
-                {f}
-              </div>
-            ))}
+            {listing.fitment.map((f, i) => {
+              const rowMatches = primaryVehicle ? listingFitsVehicle([f], primaryVehicle) : false;
+              return (
+                <div
+                  key={f.id}
+                  className="px-3.5 py-2.5 text-[13.5px]"
+                  style={{
+                    borderBottom:
+                      i < listing.fitment.length - 1 ? "1px solid #F3F3EF" : "none",
+                    fontWeight: rowMatches ? 700 : 400,
+                  }}
+                >
+                  {formatFitmentEntry(f)}
+                </div>
+              );
+            })}
           </div>
         )}
 

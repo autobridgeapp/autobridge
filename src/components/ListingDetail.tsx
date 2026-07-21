@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Image from "next/image";
 import { Listing } from "@/lib/types";
 import PartArt from "./PartArt";
 import FitBadge from "./FitBadge";
@@ -12,7 +13,9 @@ export default function ListingDetail({ listing }: { listing: Listing }) {
   const router = useRouter();
   const [liked, setLiked] = useState(false);
   const [offerSent, setOfferSent] = useState(false);
+  const [activePhoto, setActivePhoto] = useState(0);
   const s = listing.seller;
+  const photos = listing.photos;
 
   return (
     <div className="pb-[90px] relative">
@@ -22,20 +25,44 @@ export default function ListingDetail({ listing }: { listing: Listing }) {
       >
         <button
           onClick={() => router.back()}
-          className="absolute top-3 left-3 w-[34px] h-[34px] rounded-full border-none bg-white/90 cursor-pointer text-base font-bold"
+          className="absolute top-3 left-3 w-[34px] h-[34px] rounded-full border-none bg-white/90 cursor-pointer text-base font-bold z-10"
         >
           ←
         </button>
-        <div className="absolute top-3 right-3">
+        <div className="absolute top-3 right-3 z-10">
           <Heart filled={liked} onClick={() => setLiked((v) => !v)} size={34} />
         </div>
-        <div className="w-1/2">
-          <PartArt cat={listing.cat} />
-        </div>
+        {photos.length > 0 ? (
+          <Image
+            src={photos[activePhoto]}
+            alt={listing.title}
+            fill
+            sizes="400px"
+            className="object-cover"
+          />
+        ) : (
+          <div className="w-1/2">
+            <PartArt cat={listing.cat} />
+          </div>
+        )}
         <span className="font-mono absolute bottom-2.5 right-3 text-[9px] text-muted">
-          PHOTOS 1/6 · PROTOTYPE ART
+          {photos.length > 0 ? `PHOTOS ${activePhoto + 1}/${photos.length}` : "PROTOTYPE ART"}
         </span>
       </div>
+      {photos.length > 1 && (
+        <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 py-2.5 bg-bg">
+          {photos.map((url, i) => (
+            <button
+              key={url}
+              onClick={() => setActivePhoto(i)}
+              className="relative w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 border-none cursor-pointer p-0"
+              style={{ boxShadow: i === activePhoto ? "inset 0 0 0 2px #FF4400" : "inset 0 0 0 1px #E4E4DF" }}
+            >
+              <Image src={url} alt="" fill sizes="56px" className="object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
       <div className="px-4 pt-4">
         {listing.fitsMyCar && <FitBadge />}
         <h2 className="text-[19px] font-extrabold mt-2.5 mb-1 leading-tight">
@@ -49,43 +76,47 @@ export default function ListingDetail({ listing }: { listing: Listing }) {
           P/N {listing.pn}
         </div>
 
-        <div className="mt-4 bg-white rounded-xl ring-1 ring-cardline overflow-hidden">
-          <div className="px-3.5 py-2.5 border-b border-cardline flex justify-between items-center">
-            <span className="font-mono text-[10px] tracking-widest text-muted">
-              VERIFIED FITMENT
-            </span>
-            <span className="w-2 h-2 rounded-full bg-fit" />
+        {listing.fits.length > 0 && (
+          <div className="mt-4 bg-white rounded-xl ring-1 ring-cardline overflow-hidden">
+            <div className="px-3.5 py-2.5 border-b border-cardline flex justify-between items-center">
+              <span className="font-mono text-[10px] tracking-widest text-muted">
+                VERIFIED FITMENT
+              </span>
+              <span className="w-2 h-2 rounded-full bg-fit" />
+            </div>
+            {listing.fits.map((f, i) => (
+              <div
+                key={i}
+                className="px-3.5 py-2.5 text-[13.5px]"
+                style={{
+                  borderBottom:
+                    i < listing.fits.length - 1 ? "1px solid #F3F3EF" : "none",
+                  fontWeight: f.includes("WRX") && listing.fitsMyCar ? 700 : 400,
+                }}
+              >
+                {f}
+              </div>
+            ))}
           </div>
-          {listing.fits.map((f, i) => (
-            <div
-              key={i}
-              className="px-3.5 py-2.5 text-[13.5px]"
-              style={{
-                borderBottom:
-                  i < listing.fits.length - 1 ? "1px solid #F3F3EF" : "none",
-                fontWeight: f.includes("WRX") && listing.fitsMyCar ? 700 : 400,
-              }}
-            >
-              {f}
-            </div>
-          ))}
-        </div>
+        )}
 
-        <div className="mt-3 bg-white rounded-xl ring-1 ring-cardline px-3.5">
-          {listing.specs.map(([k, v], i) => (
-            <div
-              key={k}
-              className="flex justify-between py-2.5 text-[13.5px]"
-              style={{
-                borderBottom:
-                  i < listing.specs.length - 1 ? "1px solid #F3F3EF" : "none",
-              }}
-            >
-              <span className="text-muted">{k}</span>
-              <span className="font-mono text-xs font-semibold">{v}</span>
-            </div>
-          ))}
-        </div>
+        {listing.specs.length > 0 && (
+          <div className="mt-3 bg-white rounded-xl ring-1 ring-cardline px-3.5">
+            {listing.specs.map(([k, v], i) => (
+              <div
+                key={k}
+                className="flex justify-between py-2.5 text-[13.5px]"
+                style={{
+                  borderBottom:
+                    i < listing.specs.length - 1 ? "1px solid #F3F3EF" : "none",
+                }}
+              >
+                <span className="text-muted">{k}</span>
+                <span className="font-mono text-xs font-semibold">{v}</span>
+              </div>
+            ))}
+          </div>
+        )}
 
         <p className="text-sm leading-relaxed text-muted2 mt-3.5">
           {listing.description}

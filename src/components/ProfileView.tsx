@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Listing, Profile } from "@/lib/types";
 import { MY_CAR } from "@/lib/constants";
+import { createClient } from "@/lib/supabase/client";
+import { LISTING_PHOTOS_BUCKET, storagePathFromUrl } from "@/lib/storage";
 import PartArt from "./PartArt";
 import Price from "./Price";
 import SignOutButton from "./auth/SignOutButton";
@@ -25,7 +28,30 @@ export default function ProfileView({
   listings: Listing[];
 }) {
   const router = useRouter();
+  const supabase = createClient();
   const [sub, setSub] = useState<SubTab>("shop");
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  async function handleDelete(l: Listing) {
+    if (!window.confirm(`Delete "${l.title}"? This can't be undone.`)) return;
+
+    setDeletingId(l.id);
+    try {
+      const paths = l.photos
+        .map(storagePathFromUrl)
+        .filter((p): p is string => p !== null);
+      if (paths.length > 0) {
+        await supabase.storage.from(LISTING_PHOTOS_BUCKET).remove(paths);
+      }
+      const { error } = await supabase.from("listings").delete().eq("id", l.id);
+      if (error) throw error;
+      router.refresh();
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "Failed to delete listing.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   return (
     <div className="pb-6">
@@ -93,21 +119,46 @@ export default function ProfileView({
             {listings.map((l) => (
               <div
                 key={l.id}
-                onClick={() => router.push(`/listing/${l.id}`)}
-                className="cursor-pointer bg-white rounded-[14px] overflow-hidden ring-1 ring-cardline"
+                className="bg-white rounded-[14px] overflow-hidden ring-1 ring-cardline"
               >
                 <div
-                  className="flex items-center justify-center"
+                  onClick={() => router.push(`/listing/${l.id}`)}
+                  className="flex items-center justify-center relative cursor-pointer"
                   style={{ background: l.tint, aspectRatio: "1.15" }}
                 >
-                  <div className="w-[60%]">
-                    <PartArt cat={l.cat} />
-                  </div>
+                  {l.photos.length > 0 ? (
+                    <Image
+                      src={l.photos[0]}
+                      alt={l.title}
+                      fill
+                      sizes="(max-width: 400px) 50vw, 200px"
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="w-[60%]">
+                      <PartArt cat={l.cat} />
+                    </div>
+                  )}
                 </div>
                 <div className="px-2.5 pt-2.5 pb-2.5">
                   <div className="text-xs font-semibold leading-tight">{l.title}</div>
                   <div className="mt-1.5">
                     <Price value={l.price} size={14} />
+                  </div>
+                  <div className="flex gap-1.5 mt-2">
+                    <button
+                      onClick={() => router.push(`/sell/edit/${l.id}`)}
+                      className="flex-1 py-1.5 rounded-md border-none cursor-pointer bg-bg text-[11px] font-bold"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(l)}
+                      disabled={deletingId === l.id}
+                      className="flex-1 py-1.5 rounded-md border-none cursor-pointer bg-bg text-accent text-[11px] font-bold disabled:opacity-50"
+                    >
+                      {deletingId === l.id ? "…" : "Delete"}
+                    </button>
                   </div>
                 </div>
               </div>

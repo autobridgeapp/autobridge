@@ -30,5 +30,6 @@ export type Listing = {
   fitsMyCar: boolean;
   description: string;
   specs: [string, string][];
+  photos: string[];
   seller: Profile;
 };

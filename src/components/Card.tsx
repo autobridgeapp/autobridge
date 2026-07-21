@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Listing } from "@/lib/types";
 import PartArt from "./PartArt";
 import FitBadge from "./FitBadge";
@@ -26,9 +27,19 @@ export default function Card({
         className="aspect-square flex items-center justify-center relative"
         style={{ background: listing.tint }}
       >
-        <div className="w-[68%]">
-          <PartArt cat={listing.cat} />
-        </div>
+        {listing.photos.length > 0 ? (
+          <Image
+            src={listing.photos[0]}
+            alt={listing.title}
+            fill
+            sizes="(max-width: 400px) 50vw, 200px"
+            className="object-cover"
+          />
+        ) : (
+          <div className="w-[68%]">
+            <PartArt cat={listing.cat} />
+          </div>
+        )}
         {listing.fitsMyCar && (
           <div className="absolute top-2 left-2">
             <FitBadge compact />

@@ -25,6 +25,7 @@ type ListingRow = {
   fits_my_car: boolean;
   description: string;
   specs: [string, string][];
+  photos: string[];
   seller: ProfileRow;
 };
 

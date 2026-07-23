@@ -1,22 +1,54 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 const AUTH_ROUTES = ["/login", "/signup", "/onboarding"];
 
 export default function AppShell({
   children,
   isAuthed,
+  currentUserId,
+  initialUnreadCount,
 }: {
   children: React.ReactNode;
   isAuthed: boolean;
+  currentUserId: string | null;
+  initialUnreadCount: number;
 }) {
   const pathname = usePathname();
+  const [unreadCount, setUnreadCount] = useState(initialUnreadCount);
+
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    const supabase = createClient();
+
+    async function refetchUnreadCount() {
+      const { count } = await supabase
+        .from("messages")
+        .select("id", { count: "exact", head: true })
+        .neq("sender_id", currentUserId)
+        .is("read_at", null);
+      setUnreadCount(count ?? 0);
+    }
+
+    const channel = supabase
+      .channel("unread-messages")
+      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, refetchUnreadCount)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUserId]);
   const isListing = pathname?.startsWith("/listing/");
+  const isThread = pathname?.startsWith("/inbox/");
   const isAuthRoute = AUTH_ROUTES.includes(pathname ?? "");
   const isGarage = pathname === "/garage";
-  const hideNav = isListing || isAuthRoute || isGarage;
+  const hideNav = isListing || isThread || isAuthRoute || isGarage;
   const showSignup = !isAuthed && pathname !== "/signup";
 
   const tabs = [
@@ -51,13 +83,21 @@ export default function AppShell({
               <Link
                 key={t.label}
                 href={t.href}
-                className="flex-1 pt-[13px] pb-[15px] text-center font-extrabold text-[13px] -mt-px"
+                className="relative flex-1 pt-[13px] pb-[15px] text-center font-extrabold text-[13px] -mt-px"
                 style={{
                   color: active ? "#101112" : "#A0A09A",
                   borderTop: active ? "2.5px solid #FF4400" : "2.5px solid transparent",
                 }}
               >
                 {t.label}
+                {t.label === "Inbox" && unreadCount > 0 && (
+                  <span
+                    className="font-mono absolute top-1.5 text-[9px] font-semibold text-white bg-accent rounded-full px-[5px] py-[1px] leading-none"
+                    style={{ left: "calc(50% + 10px)" }}
+                  >
+                    {unreadCount}
+                  </span>
+                )}
               </Link>
             );
           })}

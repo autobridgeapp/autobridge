@@ -53,3 +53,41 @@ export type Listing = {
   fitment: FitmentEntry[];
   seller: Profile;
 };
+
+export type Message = {
+  id: number;
+  threadId: number;
+  senderId: string;
+  body: string;
+  createdAt: string;
+  readAt: string | null;
+};
+
+export type ThreadPreview = {
+  threadId: number;
+  listingId: number;
+  buyerId: string;
+  sellerId: string;
+  listingTitle: string;
+  listingCat: Category;
+  listingTint: string;
+  listingPhotos: string[];
+  buyerHandle: string;
+  sellerHandle: string;
+  lastMessageBody: string | null;
+  lastMessageAt: string | null;
+  lastMessageSenderId: string | null;
+  unreadCount: number;
+};
+
+export type Thread = {
+  id: number;
+  listingId: number;
+  buyerId: string;
+  sellerId: string;
+  listingTitle: string;
+  listingCat: Category;
+  listingTint: string;
+  listingPhotos: string[];
+  otherHandle: string;
+};

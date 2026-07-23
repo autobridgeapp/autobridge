@@ -3,6 +3,7 @@ import { Archivo, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/components/AppShell";
 import { createClient } from "@/lib/supabase/server";
+import { getUnreadMessageCount } from "@/lib/data";
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -31,13 +32,16 @@ export default async function RootLayout({
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const unreadCount = user ? await getUnreadMessageCount(user.id) : 0;
 
   return (
     <html lang="en">
       <body
         className={`${archivo.variable} ${jetbrainsMono.variable} font-display bg-frame text-ink min-h-screen flex justify-center py-4`}
       >
-        <AppShell isAuthed={!!user}>{children}</AppShell>
+        <AppShell isAuthed={!!user} currentUserId={user?.id ?? null} initialUnreadCount={unreadCount}>
+          {children}
+        </AppShell>
       </body>
     </html>
   );

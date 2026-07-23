@@ -4,28 +4,24 @@ import { useMemo, useState } from "react";
 import { Listing, Vehicle } from "@/lib/types";
 import { CATS } from "@/lib/constants";
 import { listingFitsVehicle, formatVehicleLabel } from "@/lib/fitment";
+import { useLikes } from "@/lib/useLikes";
 import Card from "./Card";
 
 export default function BrowseFeed({
   listings,
   primaryVehicle,
+  userId,
+  initialLikedIds,
 }: {
   listings: Listing[];
   primaryVehicle: Vehicle | null;
+  userId: string | null;
+  initialLikedIds: number[];
 }) {
   const [fitOnly, setFitOnly] = useState(false);
   const [cat, setCat] = useState<string>("all");
   const [query, setQuery] = useState("");
-  const [liked, setLiked] = useState<Set<number>>(new Set());
-
-  const toggleLike = (id: number) => {
-    setLiked((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
+  const { isLiked, toggle: toggleLike } = useLikes(userId, initialLikedIds);
 
   const results = useMemo(() => {
     return listings.filter((l) => {
@@ -88,7 +84,7 @@ export default function BrowseFeed({
           <Card
             key={l.id}
             listing={l}
-            liked={liked.has(l.id)}
+            liked={isLiked(l.id)}
             toggleLike={() => toggleLike(l.id)}
             primaryVehicle={primaryVehicle}
           />

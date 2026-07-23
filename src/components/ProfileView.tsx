@@ -7,6 +7,8 @@ import { Listing, Profile, Vehicle } from "@/lib/types";
 import { formatVehicleLabel } from "@/lib/fitment";
 import { createClient } from "@/lib/supabase/client";
 import { LISTING_PHOTOS_BUCKET, storagePathFromUrl } from "@/lib/storage";
+import { useLikes } from "@/lib/useLikes";
+import Card from "./Card";
 import PartArt from "./PartArt";
 import Price from "./Price";
 import SignOutButton from "./auth/SignOutButton";
@@ -24,15 +26,24 @@ export default function ProfileView({
   profile,
   listings,
   primaryVehicle,
+  likedListings,
+  userId,
 }: {
   profile: Profile;
   listings: Listing[];
   primaryVehicle: Vehicle | null;
+  likedListings: Listing[];
+  userId: string;
 }) {
   const router = useRouter();
   const supabase = createClient();
   const [sub, setSub] = useState<SubTab>("shop");
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const { isLiked, toggle: toggleLike } = useLikes(
+    userId,
+    likedListings.map((l) => l.id)
+  );
+  const visibleLikedListings = likedListings.filter((l) => isLiked(l.id));
 
   async function handleDelete(l: Listing) {
     if (!window.confirm(`Delete "${l.title}"? This can't be undone.`)) return;
@@ -189,9 +200,22 @@ export default function ProfileView({
 
       {sub === "sold" && <EmptyState text="Nothing sold yet." />}
       {sub === "purchases" && <EmptyState text="Nothing purchased yet." />}
-      {sub === "likes" && (
-        <EmptyState text="Nothing liked yet. Tap the ♥ on any part to save it here." />
-      )}
+      {sub === "likes" &&
+        (visibleLikedListings.length === 0 ? (
+          <EmptyState text="Nothing liked yet. Tap the ♥ on any part to save it here." />
+        ) : (
+          <div className="px-4 grid grid-cols-2 gap-3">
+            {visibleLikedListings.map((l) => (
+              <Card
+                key={l.id}
+                listing={l}
+                liked={isLiked(l.id)}
+                toggleLike={() => toggleLike(l.id)}
+                primaryVehicle={primaryVehicle}
+              />
+            ))}
+          </div>
+        ))}
     </div>
   );
 }

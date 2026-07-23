@@ -5,6 +5,8 @@ import { useState } from "react";
 import Image from "next/image";
 import { Listing, Vehicle } from "@/lib/types";
 import { listingFitsVehicle, formatVehicleShort, formatFitmentEntry } from "@/lib/fitment";
+import { useLikes } from "@/lib/useLikes";
+import { createClient } from "@/lib/supabase/client";
 import PartArt from "./PartArt";
 import FitBadge from "./FitBadge";
 import Heart from "./Heart";
@@ -13,17 +15,62 @@ import Price from "./Price";
 export default function ListingDetail({
   listing,
   primaryVehicle,
+  currentUserId,
+  initiallyLiked,
 }: {
   listing: Listing;
   primaryVehicle: Vehicle | null;
+  currentUserId: string | null;
+  initiallyLiked: boolean;
 }) {
   const router = useRouter();
-  const [liked, setLiked] = useState(false);
-  const [offerSent, setOfferSent] = useState(false);
+  const supabase = createClient();
+  const { isLiked, toggle: toggleLike } = useLikes(
+    currentUserId,
+    initiallyLiked ? [listing.id] : []
+  );
   const [activePhoto, setActivePhoto] = useState(0);
+  const [startingThread, setStartingThread] = useState(false);
   const s = listing.seller;
   const photos = listing.photos;
   const fits = primaryVehicle ? listingFitsVehicle(listing.fitment, primaryVehicle) : false;
+  const canMessageSeller =
+    !!s.userId && s.userId !== currentUserId;
+
+  async function handleMessageSeller() {
+    if (!currentUserId) {
+      router.push("/login");
+      return;
+    }
+    setStartingThread(true);
+    try {
+      const { data: existing, error: findError } = await supabase
+        .from("threads")
+        .select("id")
+        .eq("listing_id", listing.id)
+        .eq("buyer_id", currentUserId)
+        .maybeSingle();
+      if (findError) throw findError;
+
+      if (existing) {
+        router.push(`/inbox/${existing.id}`);
+        return;
+      }
+
+      const { data: created, error: createError } = await supabase
+        .from("threads")
+        .insert({ listing_id: listing.id, buyer_id: currentUserId, seller_id: s.userId })
+        .select("id")
+        .single();
+      if (createError) throw createError;
+
+      router.push(`/inbox/${created.id}`);
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "Failed to start conversation.");
+    } finally {
+      setStartingThread(false);
+    }
+  }
 
   return (
     <div className="pb-[90px] relative">
@@ -38,7 +85,7 @@ export default function ListingDetail({
           ←
         </button>
         <div className="absolute top-3 right-3 z-10">
-          <Heart filled={liked} onClick={() => setLiked((v) => !v)} size={34} />
+          <Heart filled={isLiked(listing.id)} onClick={() => toggleLike(listing.id)} size={34} />
         </div>
         {photos.length > 0 ? (
           <Image
@@ -143,19 +190,21 @@ export default function ListingDetail({
               ★ {s.rating} · {s.sales} sales · {s.location}
             </div>
           </div>
+          {canMessageSeller && (
+            <button
+              onClick={handleMessageSeller}
+              disabled={startingThread}
+              className="flex-shrink-0 rounded-lg px-3 py-2 text-xs font-bold bg-bg disabled:opacity-50 border-none cursor-pointer"
+            >
+              {startingThread ? "…" : "Message"}
+            </button>
+          )}
         </div>
       </div>
       <div
         className="absolute left-0 right-0 bottom-0 px-4 pt-3 pb-4 flex gap-2.5"
         style={{ background: "linear-gradient(transparent, #F5F5F2 30%)" }}
       >
-        <button
-          onClick={() => setOfferSent(true)}
-          className="flex-1 py-3.5 rounded-xl border-none cursor-pointer bg-white font-extrabold text-sm"
-          style={{ boxShadow: "inset 0 0 0 1.5px #101112" }}
-        >
-          {offerSent ? "Offer sent ✓" : "Make offer"}
-        </button>
         <button className="flex-1 py-3.5 rounded-xl border-none cursor-pointer bg-accent text-white font-extrabold text-sm">
           Buy now
         </button>

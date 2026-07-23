@@ -1,6 +1,11 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getProfileByUserId, getListingsBySeller, getPrimaryVehicle } from "@/lib/data";
+import {
+  getProfileByUserId,
+  getListingsBySeller,
+  getLikedListings,
+  getPrimaryVehicle,
+} from "@/lib/data";
 import ProfileView from "@/components/ProfileView";
 
 export const dynamic = "force-dynamic";
@@ -16,10 +21,19 @@ export default async function ProfilePage() {
   if (!profile) redirect("/login");
   if (!profile.usernameSet) redirect("/onboarding");
 
-  const [listings, primaryVehicle] = await Promise.all([
+  const [listings, primaryVehicle, likedListings] = await Promise.all([
     getListingsBySeller(profile.id),
     getPrimaryVehicle(user.id),
+    getLikedListings(user.id),
   ]);
 
-  return <ProfileView profile={profile} listings={listings} primaryVehicle={primaryVehicle} />;
+  return (
+    <ProfileView
+      profile={profile}
+      listings={listings}
+      primaryVehicle={primaryVehicle}
+      likedListings={likedListings}
+      userId={user.id}
+    />
+  );
 }

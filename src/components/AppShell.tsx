@@ -17,6 +17,7 @@ export default function AppShell({
   const isAuthRoute = AUTH_ROUTES.includes(pathname ?? "");
   const isGarage = pathname === "/garage";
   const hideNav = isListing || isAuthRoute || isGarage;
+  const showSignup = !isAuthed && pathname !== "/signup";
 
   const tabs = [
     { href: "/", label: "Browse" },
@@ -31,6 +32,14 @@ export default function AppShell({
         <Link href="/" className="font-display italic font-black text-[21px] tracking-[-0.02em]">
           AUTO<span className="text-accent">BRIDGE</span>
         </Link>
+        {showSignup && (
+          <Link
+            href="/signup"
+            className="font-mono text-[11px] font-bold tracking-wide bg-accent text-white rounded-full px-3 py-1.5 whitespace-nowrap"
+          >
+            Sign up
+          </Link>
+        )}
       </div>
       <div className="flex-1 overflow-y-auto relative">{children}</div>
       {!hideNav && (

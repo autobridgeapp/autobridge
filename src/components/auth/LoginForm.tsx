@@ -37,9 +37,18 @@ export default function LoginForm() {
 
   return (
     <div className="px-4 pt-6 pb-10">
-      <h2 className="font-display italic font-black text-2xl tracking-[-0.02em] mb-1">
-        Welcome back.
-      </h2>
+      <div className="flex items-start justify-between gap-3 mb-1">
+        <h2 className="font-display italic font-black text-2xl tracking-[-0.02em]">
+          Welcome back.
+        </h2>
+        <Link
+          href="/signup"
+          className="shrink-0 rounded-full px-3.5 py-2 text-xs font-extrabold bg-white whitespace-nowrap"
+          style={{ boxShadow: "inset 0 0 0 1.5px #101112" }}
+        >
+          Sign up
+        </Link>
+      </div>
       <p className="text-sm text-muted mb-5">Sign in to buy, sell, and message.</p>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
@@ -83,13 +92,6 @@ export default function LoginForm() {
       >
         Continue with Google
       </button>
-
-      <p className="text-center text-sm text-muted mt-6">
-        New here?{" "}
-        <Link href="/signup" className="text-ink font-bold underline">
-          Create an account
-        </Link>
-      </p>
     </div>
   );
 }
